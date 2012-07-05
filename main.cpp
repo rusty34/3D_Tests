@@ -17,8 +17,7 @@
 
 GLuint program;
 GLuint offsetLocation;
-GLuint frustumScaleLocation;
-GLuint zNearLocation, zFarLocation;
+GLuint perspectiveMatrixLocation;
 
 namespace Framework
 {
@@ -110,14 +109,23 @@ void InitializeProgram()
 
 	offsetLocation = glGetUniformLocation(program, "offset");
 
-	frustumScaleLocation = glGetUniformLocation(program, "frustumScale");
-	zNearLocation = glGetUniformLocation(program, "zNear");
-	zFarLocation = glGetUniformLocation(program, "zFar");
+	perspectiveMatrixLocation = glGetUniformLocation(program, "perspectiveMatrix");
+
+	float fFrustumScale = 1.0f;
+	float fzNear = 0.5f;
+	float fzFar = 3.0f;
+
+	float theMatrix[16];
+	memset(theMatrix, 0, sizeof(float) * 16);
+
+	theMatrix[0] = fFrustumScale;
+	theMatrix[5] = fFrustumScale;
+	theMatrix[10] = (fzFar + fzNear) / (fzNear - fzFar);
+	theMatrix[14] = (2 * fzFar * fzNear) / (fzNear - fzFar);
+	theMatrix[11] = -1.0f;
 
 	glUseProgram(program);
-	glUniform1f(frustumScaleLocation, 1.0f);
-	glUniform1f(zNearLocation, 1.0f);
-	glUniform1f(zFarLocation, 3.0f);
+	glUniformMatrix4fv(perspectiveMatrixLocation, 1, GL_FALSE, theMatrix);
 	glUseProgram(0);
 }
 
