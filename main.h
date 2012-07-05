@@ -19,8 +19,8 @@ namespace Framework
 	GLuint CreateProgram(const std::vector<GLuint> &shaderList);
 }
 
-void InitializeProgram();
-void InitializeVertexBuffer();
+void InitialiseProgram();
+void InitialiseVertexBuffer();
 
 void init();
 void display();

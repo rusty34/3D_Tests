@@ -19,14 +19,19 @@ GLuint program;
 GLuint offsetLocation;
 GLuint perspectiveMatrixLocation;
 
+float perspectiveMatrix[16];
+const float fFrustumScale = 1.0f;
+
 namespace Framework
 {
+	//Converts degress to radians
 	float DegToRad(float fAngDeg)
 	{
 		const float fDegToRad = 3.14159f * 2.0f / 360.0f;
 		return fAngDeg * fDegToRad;
 	}
 
+	//Reads in file and compiles/creates a shader from it
 	GLuint LoadShader(GLenum shaderType, const std::string &shaderFilename)
 	{
 		std::ifstream shaderFile(shaderFilename.c_str());
@@ -46,6 +51,7 @@ namespace Framework
 		}
 	}
 
+	//Creates the program and links shaders with it
 	GLuint CreateProgram(const std::vector<GLuint> &shaderList)
 	{
 		try
@@ -99,7 +105,8 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-void InitializeProgram()
+//Initialise shaders and data used in the shaders
+void InitialiseProgram()
 {
 	std::vector<GLuint> shaderList;
 	shaderList.push_back(Framework::LoadShader(GL_VERTEX_SHADER, "data\\VertexShader.vert"));
@@ -111,24 +118,23 @@ void InitializeProgram()
 
 	perspectiveMatrixLocation = glGetUniformLocation(program, "perspectiveMatrix");
 
-	float fFrustumScale = 1.0f;
 	float fzNear = 0.5f;
 	float fzFar = 3.0f;
 
-	float theMatrix[16];
-	memset(theMatrix, 0, sizeof(float) * 16);
+	memset(perspectiveMatrix, 0, sizeof(float) * 16);
 
-	theMatrix[0] = fFrustumScale;
-	theMatrix[5] = fFrustumScale;
-	theMatrix[10] = (fzFar + fzNear) / (fzNear - fzFar);
-	theMatrix[14] = (2 * fzFar * fzNear) / (fzNear - fzFar);
-	theMatrix[11] = -1.0f;
+	perspectiveMatrix[0] = fFrustumScale;
+	perspectiveMatrix[5] = fFrustumScale;
+	perspectiveMatrix[10] = (fzFar + fzNear) / (fzNear - fzFar);
+	perspectiveMatrix[14] = (2 * fzFar * fzNear) / (fzNear - fzFar);
+	perspectiveMatrix[11] = -1.0f;
 
 	glUseProgram(program);
-	glUniformMatrix4fv(perspectiveMatrixLocation, 1, GL_FALSE, theMatrix);
+	glUniformMatrix4fv(perspectiveMatrixLocation, 1, GL_FALSE, perspectiveMatrix);
 	glUseProgram(0);
 }
 
+//Buffer that stores a 3D rectangular box
 const float vertexData[] = {
 	 0.25f,  0.25f, -1.25f, 1.0f,
 	 0.25f, -0.25f, -1.25f, 1.0f,
@@ -234,7 +240,8 @@ const float vertexData[] = {
 GLuint vertexBufferObject;
 GLuint vao;
 
-void InitializeVertexBuffer()
+//Initialise buffer objects
+void InitialiseVertexBuffer()
 {
 	glGenBuffers(1, &vertexBufferObject);
 
@@ -243,10 +250,11 @@ void InitializeVertexBuffer()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+//Initialise the shaders + buffer objects
 void init()
 {
-	InitializeProgram();
-	InitializeVertexBuffer();
+	InitialiseProgram();
+	InitialiseVertexBuffer();
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -256,6 +264,7 @@ void init()
 	glFrontFace(GL_CW);
 }
 
+//Computes a circular offset to move something around
 void ComputeOffset(float &fXOffset, float &fYOffset)
 {
 	const float fLoopDuration = 5.0f;
@@ -269,6 +278,7 @@ void ComputeOffset(float &fXOffset, float &fYOffset)
 	fYOffset = sinf(fCurrTimeThroughLoop * fScale) * 0.5f;
 }
 
+//Main drawing method
 void display()
 {
 	//Offset Testing
@@ -300,13 +310,22 @@ void display()
 	glutPostRedisplay();
 }
 
-
+//Called when the window is resized
+//Updates perspectiveMatrix to make everything have the correct perspective.
 void reshape(int w, int h)
 {
+	perspectiveMatrix[0] = fFrustumScale / (w / (float)h);
+	perspectiveMatrix[5] = fFrustumScale;
+
+	glUseProgram(program);
+	glUniformMatrix4fv(perspectiveMatrixLocation, 1, GL_FALSE, perspectiveMatrix);
+	glUseProgram(0);
+
 	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
 }
 
-
+//Called when a key is pressed
+//key variable is the pressed key in ASCII
 void keyboard(unsigned char key, int x, int y)
 {
 	switch(key)
