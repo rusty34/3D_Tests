@@ -1,3 +1,6 @@
+/** Copyright (C) 2012 by Shane R. Porter **/
+/** This file is licensed under the MIT License **/
+
 #include <algorithm>
 #include <math.h>
 #include <vector>
