@@ -332,6 +332,11 @@ void init()
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CW);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LEQUAL);
+	glDepthRange(0.0f, 1.0f);
 }
 
 //Computes a circular offset to move something around
@@ -357,12 +362,13 @@ void display()
 	ComputeOffset(fXOffset, fYOffset);*/
 
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClearDepth(1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glUseProgram(program);
 
 	glBindVertexArray(vaoOne);
-	glUniform3f(offsetLocation, 0.0f, 0.0f, 0.0f);
+	glUniform3f(offsetLocation, 0.0f, 0.0f, -1.0f);
 	glDrawElements(GL_TRIANGLES, ARRAY_COUNT(indexData), GL_UNSIGNED_SHORT, 0);
 
 	glBindVertexArray(vaoTwo);
