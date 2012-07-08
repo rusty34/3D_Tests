@@ -15,17 +15,20 @@
 #include <glload/gll.hpp>
 #include <glutil/Shader.h>
 #include <GL/freeglut.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "main.h"
 
 #define ARRAY_COUNT( array ) (sizeof( array ) / (sizeof( array[0] ) * (sizeof( array ) != sizeof(void*) || sizeof( array[0] ) <= sizeof(void*))))
 
 GLuint program;
-GLuint offsetLocation;
-GLuint perspectiveMatrixLocation;
 
-float perspectiveMatrix[16];
-const float fFrustumScale = 1.0f;
+GLuint modelToCameraMatrixUnif;
+GLuint cameraToClipMatrixUnif;
+
+glm::mat4 cameraToClipMatrix(1.0f);
+
 
 namespace Framework
 {
@@ -74,6 +77,15 @@ namespace Framework
 	}
 }
 
+
+float CalcFrustumScale(float fFovDeg)
+{
+	float fFovRad = Framework::DegToRad(fFovDeg);
+	return 1.0f / tan(fFovRad / 2.0f);
+}
+
+const float fFrustumScale = CalcFrustumScale(45.0f);
+
 int main(int argc, char** argv)
 {
 
@@ -119,98 +131,43 @@ void InitialiseProgram()
 
 	program = Framework::CreateProgram(shaderList);
 
-	offsetLocation = glGetUniformLocation(program, "offset");
 
-	perspectiveMatrixLocation = glGetUniformLocation(program, "perspectiveMatrix");
+	modelToCameraMatrixUnif = glGetUniformLocation(program, "modelToCameraMatrix");
+	cameraToClipMatrixUnif = glGetUniformLocation(program, "cameraToClipMatrix");
 
 	float fzNear = 1.0f;
-	float fzFar = 3.0f;
+	float fzFar = 45.0f;
 
-	memset(perspectiveMatrix, 0, sizeof(float) * 16);
-
-	perspectiveMatrix[0] = fFrustumScale;
-	perspectiveMatrix[5] = fFrustumScale;
-	perspectiveMatrix[10] = (fzFar + fzNear) / (fzNear - fzFar);
-	perspectiveMatrix[14] = (2 * fzFar * fzNear) / (fzNear - fzFar);
-	perspectiveMatrix[11] = -1.0f;
+	cameraToClipMatrix[0].x = fFrustumScale;
+	cameraToClipMatrix[1].y = fFrustumScale;
+	cameraToClipMatrix[2].z = (fzFar + fzNear) / (fzNear - fzFar);
+	cameraToClipMatrix[2].w = -1.0f;
+	cameraToClipMatrix[3].z = (2 * fzFar * fzNear) / (fzNear - fzFar);
 
 	glUseProgram(program);
-	glUniformMatrix4fv(perspectiveMatrixLocation, 1, GL_FALSE, perspectiveMatrix);
+	glUniformMatrix4fv(cameraToClipMatrixUnif, 1, GL_FALSE, glm::value_ptr(cameraToClipMatrix));
 	glUseProgram(0);
 }
 
 //Buffer that stores a 3D rectangular box
-const int numberOfVertices = 36;
+const int numberOfVertices = 8; 
 
-#define RIGHT_EXTENT 0.8f
-#define LEFT_EXTENT -RIGHT_EXTENT
-#define TOP_EXTENT 0.20f
-#define MIDDLE_EXTENT 0.0f
-#define BOTTOM_EXTENT -TOP_EXTENT
-#define FRONT_EXTENT -1.25f
-#define REAR_EXTENT -1.75f
-
-#define GREEN_COLOR 0.75f, 0.75f, 1.0f, 1.0f
-#define BLUE_COLOR 	0.0f, 0.5f, 0.0f, 1.0f
+#define BLUE_COLOR 	0.0f, 0.0f, 1.0f, 1.0f
 #define RED_COLOR 1.0f, 0.0f, 0.0f, 1.0f
-#define GREY_COLOR 0.8f, 0.8f, 0.8f, 1.0f
-#define BROWN_COLOR 0.5f, 0.5f, 0.0f, 1.0f
 
 const float vertexData[] = {
 	//Object 1 positions
-	LEFT_EXTENT,	TOP_EXTENT,		REAR_EXTENT,
-	LEFT_EXTENT,	MIDDLE_EXTENT,	FRONT_EXTENT,
-	RIGHT_EXTENT,	MIDDLE_EXTENT,	FRONT_EXTENT,
-	RIGHT_EXTENT,	TOP_EXTENT,		REAR_EXTENT,
+	-1.0f, +1.0f, +1.0f,
+	+1.0f, +1.0f, +1.0f,
+	+1.0f, -1.0f, +1.0f,
+	-1.0f, -1.0f, +1.0f,
 
-	LEFT_EXTENT,	BOTTOM_EXTENT,	REAR_EXTENT,
-	LEFT_EXTENT,	MIDDLE_EXTENT,	FRONT_EXTENT,
-	RIGHT_EXTENT,	MIDDLE_EXTENT,	FRONT_EXTENT,
-	RIGHT_EXTENT,	BOTTOM_EXTENT,	REAR_EXTENT,
+	-1.0f, +1.0f, -1.0f,
+	+1.0f, +1.0f, -1.0f,
+	+1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f, -1.0f,
 
-	LEFT_EXTENT,	TOP_EXTENT,		REAR_EXTENT,
-	LEFT_EXTENT,	MIDDLE_EXTENT,	FRONT_EXTENT,
-	LEFT_EXTENT,	BOTTOM_EXTENT,	REAR_EXTENT,
-
-	RIGHT_EXTENT,	TOP_EXTENT,		REAR_EXTENT,
-	RIGHT_EXTENT,	MIDDLE_EXTENT,	FRONT_EXTENT,
-	RIGHT_EXTENT,	BOTTOM_EXTENT,	REAR_EXTENT,
-
-	LEFT_EXTENT,	BOTTOM_EXTENT,	REAR_EXTENT,
-	LEFT_EXTENT,	TOP_EXTENT,		REAR_EXTENT,
-	RIGHT_EXTENT,	TOP_EXTENT,		REAR_EXTENT,
-	RIGHT_EXTENT,	BOTTOM_EXTENT,	REAR_EXTENT,
-
-	//Object 2 positions
-	TOP_EXTENT,		RIGHT_EXTENT,	REAR_EXTENT,
-	MIDDLE_EXTENT,	RIGHT_EXTENT,	FRONT_EXTENT,
-	MIDDLE_EXTENT,	LEFT_EXTENT,	FRONT_EXTENT,
-	TOP_EXTENT,		LEFT_EXTENT,	REAR_EXTENT,
-
-	BOTTOM_EXTENT,	RIGHT_EXTENT,	REAR_EXTENT,
-	MIDDLE_EXTENT,	RIGHT_EXTENT,	FRONT_EXTENT,
-	MIDDLE_EXTENT,	LEFT_EXTENT,	FRONT_EXTENT,
-	BOTTOM_EXTENT,	LEFT_EXTENT,	REAR_EXTENT,
-
-	TOP_EXTENT,		RIGHT_EXTENT,	REAR_EXTENT,
-	MIDDLE_EXTENT,	RIGHT_EXTENT,	FRONT_EXTENT,
-	BOTTOM_EXTENT,	RIGHT_EXTENT,	REAR_EXTENT,
-					
-	TOP_EXTENT,		LEFT_EXTENT,	REAR_EXTENT,
-	MIDDLE_EXTENT,	LEFT_EXTENT,	FRONT_EXTENT,
-	BOTTOM_EXTENT,	LEFT_EXTENT,	REAR_EXTENT,
-					
-	BOTTOM_EXTENT,	RIGHT_EXTENT,	REAR_EXTENT,
-	TOP_EXTENT,		RIGHT_EXTENT,	REAR_EXTENT,
-	TOP_EXTENT,		LEFT_EXTENT,	REAR_EXTENT,
-	BOTTOM_EXTENT,	LEFT_EXTENT,	REAR_EXTENT,
-
-	//Object 1 colors
-	GREEN_COLOR,
-	GREEN_COLOR,
-	GREEN_COLOR,
-	GREEN_COLOR,
-
+	//Object 1 color
 	BLUE_COLOR,
 	BLUE_COLOR,
 	BLUE_COLOR,
@@ -219,60 +176,41 @@ const float vertexData[] = {
 	RED_COLOR,
 	RED_COLOR,
 	RED_COLOR,
-
-	GREY_COLOR,
-	GREY_COLOR,
-	GREY_COLOR,
-
-	BROWN_COLOR,
-	BROWN_COLOR,
-	BROWN_COLOR,
-	BROWN_COLOR,
-
-	//Object 2 colors
 	RED_COLOR,
-	RED_COLOR,
-	RED_COLOR,
-	RED_COLOR,
-
-	BROWN_COLOR,
-	BROWN_COLOR,
-	BROWN_COLOR,
-	BROWN_COLOR,
-
-	BLUE_COLOR,
-	BLUE_COLOR,
-	BLUE_COLOR,
-
-	GREEN_COLOR,
-	GREEN_COLOR,
-	GREEN_COLOR,
-
-	GREY_COLOR,
-	GREY_COLOR,
-	GREY_COLOR,
-	GREY_COLOR,
+	
 };
 
 const GLshort indexData[] =
 {
-	0, 2, 1,
-	3, 2, 0,
+	//Front
+	0, 1, 2,
+	2, 3, 0,
 
+	//Top
+	0, 4, 1,
+	1, 4, 5,
+
+	//Bottom
+	3, 2, 7,
+	2, 6, 7,
+
+	//Left
+	0, 3, 7,
+	7, 4, 0,
+
+	//Right
+	2, 1, 6,
+	5, 6, 1,
+
+	//Back
 	4, 5, 6,
 	6, 7, 4,
 
-	8, 9, 10,
-	11, 13, 12,
-
-	14, 16, 15,
-	17, 16, 14,
 };
 
 GLuint vertexBufferObject;
 GLuint indexBufferObject;
-GLuint vaoOne;
-GLuint vaoTwo;
+GLuint vao;
 
 //Initialise buffer objects
 void InitialiseVertexBuffer()
@@ -291,10 +229,10 @@ void InitialiseVertexBuffer()
 }
 
 
-void InitialiseVertexArrayObjects()
+void InitialiseVertexArrayObject()
 {
-	glGenVertexArrays(1, &vaoOne);
-	glBindVertexArray(vaoOne);
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 
 	size_t colorDataOffset = sizeof(float) * 3 * numberOfVertices;
 
@@ -306,20 +244,6 @@ void InitialiseVertexArrayObjects()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferObject);
 
 	glBindVertexArray(0);
-
-	glGenVertexArrays(1, &vaoTwo);
-	glBindVertexArray(vaoTwo);
-
-	size_t posDataOffset = sizeof(float) * 3 * (numberOfVertices/2);
-	colorDataOffset += sizeof(float) * 4 * (numberOfVertices/2);
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)posDataOffset);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (void*)colorDataOffset);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferObject);
-
-	glBindVertexArray(0);
 }
 
 //Initialise the shaders + buffer objects
@@ -327,7 +251,7 @@ void init()
 {
 	InitialiseProgram();
 	InitialiseVertexBuffer();
-	InitialiseVertexArrayObjects();
+	InitialiseVertexArrayObject();
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -337,11 +261,15 @@ void init()
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LEQUAL);
 	glDepthRange(0.0f, 1.0f);
+
+	//glEnable(GL_DEPTH_CLAMP);
 }
 
 //Computes a circular offset to move something around
-void ComputeOffset(float &fXOffset, float &fYOffset)
+glm::mat4 ConstructMatrix()
 {
+	glm::mat4 transMat(1.0f);
+
 	const float fLoopDuration = 5.0f;
 	const float fScale = 3.14159f * 2.0f / fLoopDuration;
 
@@ -349,30 +277,29 @@ void ComputeOffset(float &fXOffset, float &fYOffset)
 
 	float fCurrTimeThroughLoop = fmodf(fElapsedTime, fLoopDuration);
 
-	fXOffset = cosf(fCurrTimeThroughLoop * fScale) * 0.5f;
-	fYOffset = sinf(fCurrTimeThroughLoop * fScale) * 0.5f;
+	glm::vec3 transVec = glm::vec3(cosf(fCurrTimeThroughLoop * fScale) * 4.0f,
+	          sinf(fCurrTimeThroughLoop * fScale) * 4.0f,
+	          -10.0f);
+
+	transMat[3] = glm::vec4(transVec, 1.0f);
+
+	return transMat;
 }
 
 //Main drawing method
 void display()
 {
-	//Offset Testing
-	/*float fXOffset = 0.0f;
-	float fYOffset = 0.0f;
-	ComputeOffset(fXOffset, fYOffset);*/
-
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClearDepth(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glUseProgram(program);
 
-	glBindVertexArray(vaoOne);
-	glUniform3f(offsetLocation, 0.0f, 0.0f, -1.0f);
-	glDrawElements(GL_TRIANGLES, ARRAY_COUNT(indexData), GL_UNSIGNED_SHORT, 0);
+	glBindVertexArray(vao);
 
-	glBindVertexArray(vaoTwo);
-	glUniform3f(offsetLocation, 0.0f, 0.0f, -1.0f);
+	const glm::mat4 &transformMatrix = ConstructMatrix();
+
+	glUniformMatrix4fv(modelToCameraMatrixUnif, 1, GL_FALSE, glm::value_ptr(transformMatrix));
 	glDrawElements(GL_TRIANGLES, ARRAY_COUNT(indexData), GL_UNSIGNED_SHORT, 0);
 
 	glBindVertexArray(0);
@@ -386,11 +313,11 @@ void display()
 //Updates perspectiveMatrix to make everything have the correct perspective.
 void reshape(int w, int h)
 {
-	perspectiveMatrix[0] = fFrustumScale / (w / (float)h);
-	perspectiveMatrix[5] = fFrustumScale;
+	cameraToClipMatrix[0].x = fFrustumScale / (w / (float)h);
+	cameraToClipMatrix[1].y = fFrustumScale;
 
 	glUseProgram(program);
-	glUniformMatrix4fv(perspectiveMatrixLocation, 1, GL_FALSE, perspectiveMatrix);
+	glUniformMatrix4fv(cameraToClipMatrixUnif, 1, GL_FALSE, glm::value_ptr(cameraToClipMatrix));
 	glUseProgram(0);
 
 	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
