@@ -1,26 +1,18 @@
 /** Copyright (C) 2012 by Shane R. Porter **/
 /** This file is licensed under the MIT License **/
 
-#include <algorithm>
 #include <math.h>
-#include <vector>
 #include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <exception>
-#include <stdexcept>
+#include <vector>
 
 #include <glload/gl_3_3_comp.h>
 #include <glload/gll.hpp>
-#include <glutil/Shader.h>
 #include <GL/freeglut.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "framework.h"
 #include "main.h"
-
-#define ARRAY_COUNT( array ) (sizeof( array ) / (sizeof( array[0] ) * (sizeof( array ) != sizeof(void*) || sizeof( array[0] ) <= sizeof(void*))))
 
 GLuint program;
 
@@ -28,54 +20,6 @@ GLuint modelToCameraMatrixUnif;
 GLuint cameraToClipMatrixUnif;
 
 glm::mat4 cameraToClipMatrix(1.0f);
-
-
-namespace Framework
-{
-	//Converts degress to radians
-	float DegToRad(float fAngDeg)
-	{
-		const float fDegToRad = 3.14159f * 2.0f / 360.0f;
-		return fAngDeg * fDegToRad;
-	}
-
-	//Reads in file and compiles/creates a shader from it
-	GLuint LoadShader(GLenum shaderType, const std::string &shaderFilename)
-	{
-		std::ifstream shaderFile(shaderFilename.c_str());
-		std::stringstream shaderData;
-		shaderData << shaderFile.rdbuf();
-		shaderFile.close();
-
-		try
-		{
-			return glutil::CompileShader(shaderType, shaderData.str());
-		}
-		catch(std::exception &e)
-		{
-			std::cout << "Shader Load Error\n";
-			fprintf(stderr, "%s\n", e.what());
-			throw;
-		}
-	}
-
-	//Creates the program and links shaders with it
-	GLuint CreateProgram(const std::vector<GLuint> &shaderList)
-	{
-		try
-		{
-			GLuint prog = glutil::LinkProgram(shaderList);
-			std::for_each(shaderList.begin(), shaderList.end(), glDeleteShader);
-			return prog;
-		}
-		catch(std::exception &e)
-		{
-			std::for_each(shaderList.begin(), shaderList.end(), glDeleteShader);
-			fprintf(stderr, "%s\n", e.what());
-			throw;
-		}
-	}
-}
 
 
 float CalcFrustumScale(float fFovDeg)

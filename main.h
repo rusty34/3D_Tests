@@ -4,21 +4,6 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include <vector>
-#include <string>
-
-namespace Framework
-{
-	float DegToRad(float fAngDeg);
-
-	/*GLUint CreateShader(GLenum shaderType, 
-	                    const std::string &shaderFile, 
-						const std::string &shaderName);*/
-	GLuint LoadShader(GLenum shaderType, const std::string &shaderFile);
-
-	GLuint CreateProgram(const std::vector<GLuint> &shaderList);
-}
-
 void InitialiseProgram();
 void InitialiseVertexBuffer();
 
