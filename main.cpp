@@ -10,6 +10,7 @@
 #include <GL/freeglut.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glutil/MatrixStack.h>
 
 #include "framework.h"
 #include "main.h"
@@ -20,7 +21,6 @@ GLuint modelToCameraMatrixUnif;
 GLuint cameraToClipMatrixUnif;
 
 glm::mat4 cameraToClipMatrix(1.0f);
-
 
 float CalcFrustumScale(float fFovDeg)
 {
@@ -209,6 +209,7 @@ void init()
 	//glEnable(GL_DEPTH_CLAMP);
 }
 
+
 //Computes a circular offset to move something around
 glm::mat4 ConstructMatrix()
 {
@@ -230,6 +231,7 @@ glm::mat4 ConstructMatrix()
 	return transMat;
 }
 
+
 //Main drawing method
 void display()
 {
@@ -241,10 +243,26 @@ void display()
 
 	glBindVertexArray(vao);
 
-	const glm::mat4 &transformMatrix = ConstructMatrix();
+	glutil::MatrixStack modelMatrix;
+	{
+		modelMatrix.Push();
+		modelMatrix.Translate(glm::vec3(0.0f + boxXOffset, 3.0f + boxYOffset, -10.0f));
 
-	glUniformMatrix4fv(modelToCameraMatrixUnif, 1, GL_FALSE, glm::value_ptr(transformMatrix));
-	glDrawElements(GL_TRIANGLES, ARRAY_COUNT(indexData), GL_UNSIGNED_SHORT, 0);
+		glUniformMatrix4fv(modelToCameraMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
+		glDrawElements(GL_TRIANGLES, ARRAY_COUNT(indexData), GL_UNSIGNED_SHORT, 0);
+	}
+	modelMatrix.Pop();
+
+	modelMatrix.Push();
+	{
+		modelMatrix.Translate(glm::vec3(0.0f, -3.0f, -10.0f));
+		modelMatrix.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 45.0f);
+		modelMatrix.Scale(1.5f);
+
+		glUniformMatrix4fv(modelToCameraMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
+		glDrawElements(GL_TRIANGLES, ARRAY_COUNT(indexData), GL_UNSIGNED_SHORT, 0);
+	}
+	modelMatrix.Pop();
 
 	glBindVertexArray(0);
 	glUseProgram(0);
@@ -252,6 +270,7 @@ void display()
 	glutSwapBuffers();
 	glutPostRedisplay();
 }
+
 
 //Called when the window is resized
 //Updates perspectiveMatrix to make everything have the correct perspective.
@@ -267,14 +286,37 @@ void reshape(int w, int h)
 	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
 }
 
+
+void moveBoxX(bool moveRight)
+{
+	boxXOffset += moveRight ? increment : -increment;
+}
+
+void moveBoxY(bool moveUp)
+{
+	boxYOffset += moveUp ? increment : -increment;
+}
+
 //Called when a key is pressed
 //key variable is the pressed key in ASCII
 void keyboard(unsigned char key, int x, int y)
 {
 	switch(key)
 	{
-		case 27:
+	case 27:
 		glutLeaveMainLoop();
 		return;
+	case 'w':
+		moveBoxY(true);
+		break;
+	case 's':
+		moveBoxY(false);
+		break;
+	case 'a':
+		moveBoxX(false);
+		break;
+	case 'd':
+		moveBoxX(true);
+		break;
 	}
 }
